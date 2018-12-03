@@ -1,11 +1,14 @@
-# Spring Taxi Dispatch Simulator
+# Initial page
+
+
+
+## Spring Taxi Dispatch Simulator
 
 _This was the Intern project finished in Summer 2018 regarding a web service for real-time taxi dispatch simulator. Many thanks to my supervisor and other senior engineers who gave me help with all efforts they got. Time goes fast all the time; wish them all good luck!_
 
 \(_For confidential issues, the data used and presented are fake data generated randomly, but it does not effect the generosity of the project at all\)_
 
----
-## 1 Introduction
+### 1 Introduction
 
 Basically, the web application fulfills the dispatching simulating, order generation, driver monitoring, trajectory tacking, dashboard showcase, and etc.
 
@@ -14,8 +17,7 @@ For technology stacks, I developed the system with Java, Spring Boot/Data/Cloud,
 For system design, there are two key part that are upper level services, which are Dispatch Service and Geo Service.
 
 * Drivers send the location info to dispatch service, returning with paired user info
-
-* User send requests to dispatch service, returning with request![](/assets/introduction_overview.png)
+* User send requests to dispatch service, returning with request[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/introduction_overview.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/introduction_overview.png)
 
 Location table will be writing heavily while the Trip table will be reading heavily \(Drivers request queries\)
 
@@ -33,11 +35,11 @@ The steps in the logic behind:
    2. User finds he/she has been paired with the given driver
 5. Driver deny the request
    1. Modify the Driver table with the trip info, marked by the info driver denying the trip
-   2. Re-pair with step repeated 
+   2. Re-pair with step repeated
 
-## ![](/assets/frames.png)2 Algorithm Model - Dispatch
+### [![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/frames.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/frames.png)2 Algorithm Model - Dispatch
 
-### 2.1 Classical Dispatching
+#### 2.1 Classical Dispatching
 
 In short, using GeoHash to find the nearest among certain range. we can apply a _Level-varying_ store for driver table.
 
@@ -45,7 +47,7 @@ In short, using GeoHash to find the nearest among certain range. we can apply a 
 
 driver1 → \(lat, lng\)
 
-![](/assets/geohash.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/geohash.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/geohash.png)
 
 Example:
 
@@ -59,7 +61,7 @@ NoSQL - Redis
 
 * If Driver's location is 9q9hvt, then we store in 9q9hvt, 9q9hv, 9q9h keys, for this three, when finding, we can level by level to find
 * 6 bit geohash is within 1km, enough for taxi
-* 4 bit geohash goes beyond 20km, we will not go far for the reason that we will not ask for taxi too far away 
+* 4 bit geohash goes beyond 20km, we will not go far for the reason that we will not ask for taxi too far away
 * key = 9q9hvt, value = set of drivers in this location
 
 Cassandra: it is also slow, driver table is constantly updated and index key in Cassandra is not good for modified so often
@@ -68,7 +70,7 @@ Memcached: there is no persistence storage and does not support Set \(it is trou
 
 Mongo: It can be choosen
 
-### 2.2 Optimal Dispatching
+#### 2.2 Optimal Dispatching
 
 The quality of order dispatching can directly influence the user experience of riders as well as taxi operating efficiency. thus, how to dispatch orders efficiently is a central task. Some previous work on order dispatching focused on how to find a nearest driver or a shortest-travel-time driver for each individual order. When an order comes in, such a system chooses one of the nearest drivers, without judging whether these drivers were more suitable for other orders, therefore these methods cannot guarantee the global shortest-travel-time for all orders. The authors in proposed a novel model, based on a multi-agent architecture called NTuCab. In order to minimize the waiting-time or the pick-up distance globally, this model considers each agent as a computation unit. Each computation unit processes N order/driver pairs and each order is dispatched to only one driver. An order will be dispatched to another driver if the matched driver does not accept it.
 
@@ -80,22 +82,19 @@ So we propose a novel combinatorial optimization model to solve the order dispat
 
 We first introduce some notations. The goal of our order dispatch system is to maximize the success rate, denoted as ESR. If there are N orders to be dispatched to M drivers, we represent the dispatch result as a matrix.
 
-An order is dispatched to a number of drivers, and each driver decides whether or not to accept it according to his or her own preference. For each order, whether it is accepted by one of the drivers is directly related to each driver’s probability of acceptance.  Thus, the key problem for order dispatching is to estimate the probability of each driver’s acceptance of an order. If we can estimate the matrix with its elements indicating the probability of each driver accepting each order, then we can estimate the probability of an order to be accepted by one of the drivers therefore, we divide the order dispatch model into two sub-models. One model predicts each driver’s action, in which we estimate the probability of a driver accepting an order. Another model formulates an optimization problem for maximizing the target ESR using the estimated acceptance probabilities, and then solves the underlying optimization problem.
+An order is dispatched to a number of drivers, and each driver decides whether or not to accept it according to his or her own preference. For each order, whether it is accepted by one of the drivers is directly related to each driver’s probability of acceptance. Thus, the key problem for order dispatching is to estimate the probability of each driver’s acceptance of an order. If we can estimate the matrix with its elements indicating the probability of each driver accepting each order, then we can estimate the probability of an order to be accepted by one of the drivers therefore, we divide the order dispatch model into two sub-models. One model predicts each driver’s action, in which we estimate the probability of a driver accepting an order. Another model formulates an optimization problem for maximizing the target ESR using the estimated acceptance probabilities, and then solves the underlying optimization problem.
 
 **Accept Rate**
 
 In short, we apply Machine Learning methods, linear logistic regression \(LR\) and gradient boosted decision tree \(GBDT\) to predict the accept rate from the the features. Actually, LR will be better.
 
-![](/assets/eq4.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/eq4.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/eq4.png)
 
 The prediction model considers various factors, which can be summarized as follows:
 
 * Order-Driver related features: the pick-up distance, the broadcasting counts of the order to the driver, whether the order is in front of or behind the driver’s current driving direction.
-
 * Order related features: the distance and the estimated time arrival \(ETA\) between the origin and the destination, the destination category \(airport, hospital, school, business district, etc.\), tra.c situation in the route, historical order frequency at the destination.
-
 * Driver related features: Long-term behaviors \(include historical acceptance rate of a driver, active locations of a driver, preference of di.erent broadcast distances of a driver, etc.\) and short-term interests of a driver such as orders recently accepted or not, etc.
-
 * Supplemental features, such as day of the week, hour of the day, number of drivers and orders nearby.
 
 **Optimization Model**
@@ -104,7 +103,7 @@ In our system, one order can be dispatched to several drivers, thus all these dr
 
 Directly, I give the formulas for our optimization model.
 
-![](/assets/eq5.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/eq5.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/eq5.png)
 
 Many combinatorial optimization problems are NP hard, and there is no e.cient general algorithm to solve this class of problems in polynomial time. A typical approach is to use a heuristic algorithm to .nd an approximate solution. Commonly used methods include hill-climbing methods, genetic algorithms, simulated annealing algorithms, etc. By balancing the accuracy and the performance, we choose a hill-climbing method to solve the problem.
 
@@ -115,7 +114,7 @@ The dispatching related codes are packed in these two files:
 * Service-Location-Service
 * Service-Dispatch-Model
 
-## 3 Fleeting Simulation - Micro-Service
+### 3 Fleeting Simulation - Micro-Service
 
 This part gives a overview of the fleeting, which is about the geoloaction. Generally, it consists of the data persistence, data ingest, data simulating, data updating, and so on.
 
@@ -161,13 +160,13 @@ Each of the backend services is corresponding to each business function
 * Clean code
 * Developers focus on implementing business logic
 
-### 3.1 Fleeting-Location-Initialization
+#### 3.1 Fleeting-Location-Initialization
 
 **Data**
 
 The fake data generated from the dispatch service can be passed by .json file. Here we can use a fake data to do the job for showing. A example of fake data as showed in fleet.json
 
-```js
+```text
 {
   "vin" : "7c08973d-bed4-4cbd-9c28-9282a02a6032",
   "latitude" : "38.9093216",
@@ -201,7 +200,7 @@ The fake data generated from the dispatch service can be passed by .json file. H
 
 Or you can use the data from file _SHData_, but the other service does not support the schema for that. A sample of the [driversInit.json](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/SHData/driversInit.json)
 
-```js
+```text
 {
     "belong": "inner",
     "carInfo": {
@@ -230,7 +229,7 @@ You will be directed into HAL-Browser, which will guide you through the APIs to 
 
 Basically, we only care about the geo location, which is latitude and longitude. The queries can be made like this
 
-```java
+```text
 @RepositoryRestResource(collectionResourceRel = "locations")
 public interface ServiceLocationRepository
 extends PagingAndSortingRepository<ServiceLocation, Long> {
@@ -243,7 +242,7 @@ extends PagingAndSortingRepository<ServiceLocation, Long> {
 
 Or
 
-```java
+```text
 @RequestMapping(value="/bulk/serviceLocations", method=RequestMethod.POST)
 @ResponseStatus(HttpStatus.CREATED)
 public void upload(@RequestBody List<ServiceLocation> locations) {
@@ -262,7 +261,7 @@ The service will run on `localhost: 9000`
 
 The `application.yml` file
 
-```
+```text
 server:
   port: 9000
 spring:
@@ -274,7 +273,7 @@ spring:
 
 Another simple data for demo is in `serviceLocation.json`
 
-```js
+```text
 {
     "latitude": 38.907774,
     "longitude": -77.023736,
@@ -288,11 +287,11 @@ Another simple data for demo is in `serviceLocation.json`
 
 Using Postman or go through command line with code below will inject the data in
 
-```
+```text
 curl -H "Content-Type: application/json" localhost:9001/bulk/serviceLocations -d @serviceLocations.json
 ```
 
-### 3.2 Fleeting-Location-Simulator
+#### 3.2 Fleeting-Location-Simulator
 
 **Google Map API**
 
@@ -300,7 +299,7 @@ Simulator replies heavily on the Google Map API.
 
 Firstly, we denote the dependencies brought from the Google Map API
 
-```
+```text
 <dependency>
     <groupId>de.micromata.jak</groupId>
     <artifactId>JavaAPIforKml</artifactId>
@@ -330,7 +329,7 @@ Firstly, we denote the dependencies brought from the Google Map API
 
 Using the Direction, we can demo the route and movement of the driver, when we get the start point as address and end point also as address. The `direction.json` shows the user's pick-up location and destination. Like
 
-```
+```text
 {
     "from": "200 Mac Dill Blvd SE, Washington, DC 20340",
     "to": "901 Massachusetts Ave NW, Washington, DC 20001, USA"
@@ -345,7 +344,7 @@ More on: [https://developers.google.com/maps/documentation/directions/intro\#Leg
 
 In short, Google Map API will help us generated the routes and the routes will be abstracted into a String. Then, we can do the simulation, based on it. A example is below:
 
-```js
+```text
 "gpsSimulatorRequests": [
     {
       "vin": "7c08973d-bed4-4cbd-9c28-9282a02a6032",
@@ -376,7 +375,7 @@ In short, Google Map API will help us generated the routes and the routes will b
 Due to the fact we use the Google Map API, we should follow the rules made by the framework, then we generated a series of classes to support our simulation. The table below showcases some packages and main function.
 
 | Package | Function |
-| :---: | :---: |
+| :--- | :--- |
 | model | Classes created to follow the use of Google Map API |
 | support | Navigation utils by Google Map |
 | rest | REST APIs |
@@ -398,7 +397,7 @@ This system will run on `localhost: 9005`
 
 We leave googleApiKey in this file as well
 
-```
+```text
 server:
   port: 9005
 spring:
@@ -425,13 +424,13 @@ fleet-location-ingest:
 
 it will interact with fleeting-location-ingest and fleeting-location-updater, we will leave this to the next sections
 
-### 3.3 Fleeting-Location-Ingest
+#### 3.3 Fleeting-Location-Ingest
 
 **Overview**
 
 Publish current locations to locations queue in RabbitMQ
 
-![](/assets/mq.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/mq.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/mq.png)
 
 **Rabbit MQ**
 
@@ -441,29 +440,29 @@ _Ingest service_ acts between the simulator and updater. We need to specify the 
 
 Spring Cloud provides templet to fast bind the publisher and consumer
 
-```
+```text
 @EnableBinding(Source.class)
 ```
 
-```
+```text
 @Autowired
 private MessageChannel output;
 ```
 
 The dashboard can show some summaries for the messages
 
-```
+```text
 http://localhost:15672/ 
 User/password:(guest/guest)
 ```
 
-![](/assets/RabbitMQ.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/RabbitMQ.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/RabbitMQ.png)
 
 **API**
 
 The only thing this service does is to re-send the message of location, then we can send the position info through
 
-```
+```text
 @RequestMapping(path = "/api/locations", method = RequestMethod.POST)
 public void locations(@RequestBody String positionInfo) {
     this.output.send(MessageBuilder.withPayload(positionInfo).build());
@@ -474,7 +473,7 @@ public void locations(@RequestBody String positionInfo) {
 
 The system will run on `localhost:9006`
 
-```
+```text
 server:
   port: 9006
 spring:
@@ -486,13 +485,13 @@ spring:
         output: vehicles
 ```
 
-### 3.4 Fleeting-Location-Updater
+#### 3.4 Fleeting-Location-Updater
 
 **Overview**
 
 Consume current locations from locations queue in RabbitMQ and Setup Websocket connect and push locations to client
 
-![](/assets/update.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/update.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/update.png)
 
 **WebJars**
 
@@ -503,7 +502,7 @@ WebJars packages these common Web front-end resources into Java Jar packages, an
 
 The key thing that matters is the Rest Api, which sends to `/queue/vehicles`.
 
-```java
+```text
 @MessageMapping("/sendMessage")
 @SendTo("/queue/vehicles")
 public String sendMessage(String message) throws Exception {
@@ -517,14 +516,14 @@ For WebSocket configuration, we need to register the message broker and register
 
 Spring Cloud Stream is responsible for sending current position data to connected WebSocket client. We can denote the endpoint and sink with the annotation
 
-```java
+```text
 @MessageEndpoint
 @EnableBinding(Sink.class)
 ```
 
 To link with the former service of ingesting
 
-```java
+```text
 @ServiceActivator(inputChannel = Sink.INPUT)
 public void updateLocationaddServiceLocations(String input) throws Exception {
 
@@ -538,13 +537,13 @@ public void updateLocationaddServiceLocations(String input) throws Exception {
 
 Spring Cloud will provide rest template for us
 
-```
+```text
 private RestTemplate restTemplate = new RestTemplate();
 ```
 
 The _updateServiceLocations_ will be used like this:
 
-```java
+```text
 ResponseEntity<Resource<ServiceLocation>> result = this.restTemplate.exchange(
                         "http://service-location-service/serviceLocations/search/findFirstByLocationNear?location={lat},{long}",
                         HttpMethod.GET, new HttpEntity<Void>((Void) null),
@@ -559,7 +558,7 @@ Current position will be enriched with the closest service location
 
 The system will run on `localhost: 9007`
 
-```
+```text
 server:
   port: 9007
 spring:
@@ -574,25 +573,25 @@ spring:
   profiles: test
 ```
 
-### 3.5 Dashboard
+#### 3.5 Dashboard
 
 We use **Leaflet.js** framework as our map UI, the dashboard will show the moving our the cars and the details of each car as well
 
-The figure below shows the overall distribution of the drivers ![](/assets/UI1.png)
+The figure below shows the overall distribution of the drivers [![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/UI1.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/UI1.png)
 
-We can target one driver to view the detail infomation![](/assets/UI2.png)
+We can target one driver to view the detail infomation[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/UI2.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/UI2.png)
 
 There are also some basic search features for filtering
 
-![](/assets/UI3.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/UI3.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/UI3.png)
 
-### 3.6 Platform
+#### 3.6 Platform
 
 **Docker**
 
 Dockerized the system by this docker compose file. The docker will pull the image and start RabbitMQ or MongoDB
 
-```
+```text
 rabbitmq:
   image: rabbitmq:3-management
   ports:
@@ -606,39 +605,39 @@ mongodb:
 
 **Eureka**
 
-![](/assets/eureka.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/eureka.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/eureka.png)
 
 Eureka is used for service register and discovery, we need to run itself as a micro-service
 
-```
+```text
 @EnableEurekaServer
 ```
 
 To let Eureka find your service, we simply need to add anotation in the main entry of your service
 
-```
+```text
 @EnableDiscoveryClient
 ```
 
-we can see from `localhost:8761`, which will show the registered services ![](/assets/register.png)
+we can see from `localhost:8761`, which will show the registered services [![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/register.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/register.png)
 
 **Hystrix**
 
 Hystrix is for circuit breaker, it has its own dashboard to view. Likewise, we need to run itself as a micro-service
 
-```
+```text
 @EnableHystrixDashboard
 ```
 
 To add it, we simply need to add anotation in the main entry of your service
 
-```
+```text
 @EnableCircuitBreaker
 ```
 
 An example usage in _updater_ service
 
-```java
+```text
 public void handleServiceLocationServiceFailure(CurrentPosition currentPosition) {
     LOGGER.error("Hystrix Fallback Method. Unable to retrieve service station info.");
 }
@@ -646,7 +645,7 @@ public void handleServiceLocationServiceFailure(CurrentPosition currentPosition)
 
 The dashboard will run on `localhost:7979`
 
-`Hystrix Stream: http://localhost:9005/hystrix.stream`![](/assets/hystrix.png)
+`Hystrix Stream: http://localhost:9005/hystrix.stream`[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/hystrix.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/hystrix.png)
 
 **Zuul**
 
@@ -664,7 +663,7 @@ Spring Boot Actuator Endpoints
 
 We can have a look at the health information for the service runs on `localhost:9005` by `localhost:9005/health`
 
-```js
+```text
 {
     "description": "Spring Cloud Eureka Discovery Client",
     "status": "UP",
@@ -694,21 +693,21 @@ We can have a look at the health information for the service runs on `localhost:
 
 Write your custom health check:
 
-![](/assets/health.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/health.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/health.png)
 
 **More...**
 
 Continuous Delivery \(CD\)
 
-![](/assets/CI.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/CI.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/CI.png)
 
 Hahaha...
 
-![](/assets/haha.png)
+[![](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/raw/master/assets/haha.png)](https://github.com/carsonluuu/Real-Time-Taxi-Dispatch-Simulator/blob/master/assets/haha.png)
 
-## 4 Discussion
+### 4 Discussion
 
-#### 4.1 **Scalability**
+**4.1 Scalability**
 
 The default requirement is 150k QPS. The database writing/reading speed &gt; 100k QPS, but if our Database is down.
 
@@ -732,14 +731,11 @@ So we may need **DB sharding**
 
 * Replica by DB —— Master-Slave
 * Replica by yourself
-
   * sharding key -&gt; 123\(city-id\) to 123-0, 123-1, 123-2
-
   * read from any replica, if not this one, then switch
-
 * Riak / Cassandra -- help with recovery
 
-#### 4.2 To Be Done
+**4.2 To Be Done**
 
 For the two big system: dispatch and fleeting simulation, we actually uploading pre-defined locations and status from JSON file, deserialize to JSON object, and store into database then getting locations based on ID, type, or all locations. Then, frontend can use running location service to initialize all locations during startup.
 
@@ -749,7 +745,7 @@ On the other hand, front end page is lacking in features. We should add more fun
 
 For deployment AWS can be natively support, some setting-ups need to be done for the transfer.
 
-```
+```text
 eureka:
   client:
     #Region where eureka is deployed -For AWS specify one of the AWS regions, for other datacenters specify a arbitrary string
@@ -772,25 +768,29 @@ eureka:
     virtualHostName: ${spring.application.name}
 ```
 
-## Appendix
+### Appendix
 
 Please generate the "fat" jar by yourself as following:
 
 Run
-```
+
+```text
 mvn clean install
 ```
+
 by bash in the project folder to compile. If you don't have a maven, install one.
 
 Run
-```
+
+```text
 java -jar [jar-file-compiled by Maven]
 ```
+
 The default place for the jar file is in the "./target" folder.
 
-OR you can import the project into IntelliJ(Suggested)
+OR you can import the project into IntelliJ\(Suggested\)
 
-```
+```text
 ##Service Start Sequence
 1. docker-compose up
 3. sh ./start-location-simulator.sh
@@ -805,5 +805,4 @@ OR you can import the project into IntelliJ(Suggested)
 2. Open Simulator UI on http://localhost:9005
 3. Click run simulation
 ```
-
 
